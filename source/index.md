@@ -3,12 +3,10 @@ title: API Reference
 
 language_tabs:
   - shell
-  - ruby
-  - python
+  - php
 
 toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
-  - <a href='http://github.com/tripit/slate'>Documentation Powered by Slate</a>
+  - Documentation Powered by <a href='http://github.com/tripit/slate'>Slate</a>
 
 includes:
   - errors
@@ -16,153 +14,363 @@ includes:
 search: true
 ---
 
-# Introduction
+# Overview
 
-Welcome to the Kittn API! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
+The Simply Satisfied API is designed to allow you to integrate Simply Satisfied's feedback tools into your own web or mobile application.
 
-We have language bindings in Shell, Ruby, and Python! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
+Designed around [REST](http://en.wikipedia.org/wiki/Representational_state_transfer) principles, the aim of the API is to return sensible responses from entity-based endpoint calls, and make it as easy as possible to get access to your account's data.
 
-This example API documentation page was created with [Slate](http://github.com/tripit/slate). Feel free to edit it and use it as a base for your own API's documentation.
+If you have any suggestions to improve the API, please send them along to [support@simplysatisfied.net](mailto:support@simplysatisfied.net), and we'll take them on board.
+
+## Namespaced data return format.
+
+```json
+{
+  "data": {
+    "key1":"Your data here",
+    "key2":"Some more data here"
+  },
+  "meta": {
+    "page":1
+  }
+}
+```
+
+Just a note that Simply's API follows the standard of returning response data wrapped in a `data` namespace, that means that when responses come back, they will be available in a nested `data` property.
+
+For "listing" endpoints, `data` will be a collection, where as for endpoints that load a specific ID, they generally return a single object.
+
+## PHP API wrapper
+
+The official PHP API wrapper is available on [Github](http://github.com/SimplySatisfied/simply-php), we will be adding more languages in the future.
+
+You can also install it using composer adding `simplysatisfied/simply-php` to your `composer.json`.
 
 # Authentication
 
-> To authorize, use this code:
+```php
+<?php
 
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-```
-
-```python
-import 'kittn'
-
-api = Kittn.authorize('meowmeowmeow')
+$client = new Simply\Api('your-api-key-here');
 ```
 
 ```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here"
-  -H "Authorization: meowmeowmeow"
+$ curl http://simplysatisfied.net/api/v1/
+  -H "X-Simply-Auth: your-api-key-here"
 ```
 
-> Make sure to replace `meowmeowmeow` with your API key.
+Authentication with our API is super-easy, just grab your API Key from the *Tools* section of the Simply Satisfied web interface.
 
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
+You can then provide that API key via a special header called `X-Simply-Auth`, and that's it!
 
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
+# Users
 
-`Authorization: meowmeowmeow`
+## List all users
 
-<aside class="notice">
-You must replace `meowmeowmeow` with your personal API key.
-</aside>
+```php
+<?php
 
-# Kittens
+$api = new Simply\Api('your-api-key-here');
 
-## Get All Kittens
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
-```
-
-```python
-import 'kittn'
-
-api = Kittn.authorize('meowmeowmeow')
-api.kittens.get()
+$users = $api->users->all()->get();
 ```
 
 ```shell
-curl "http://example.com/api/kittens"
-  -H "Authorization: meowmeowmeow"
+$ curl "http://simplysatisfied.net/api/v1/user"
+  -H "X-Simply-Auth: your-api-key-here"
 ```
 
-> The above command returns JSON structured like this:
+> Example response:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
-  },
-  {
-    "id": 2,
-    "name": "Isis",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
+{
+  "data":[
+    {
+      "id": 1,
+      "email": "andy@example.com",
+      "name": "Andy Dwyer",
+      "confirmed": true,
+      "company_id": 1,
+      "created_at": "2014-10-10 15:51:51",
+      "updated_at": "2014-10-10 15:51:51",
+      "remember_token": ""
+    },
+    {
+      "id": 2,
+      "email": "ron@example.com",
+      "name": "Ron Swanson",
+      "confirmed": true,
+      "company_id": 1,
+      "created_at": "2014-10-10 15:51:51",
+      "updated_at": "2014-10-10 15:51:51",
+      "remember_token": ""
+    }
+  ],
+  "meta":{
+    "pagination":{
+      "total":2,
+      "count":2,
+      "per_page":30,
+      "current_page":1,
+      "total_pages":1,
+      "links":[]
+    }
   }
-]
+}
 ```
 
-This endpoint retrieves all kittens.
+This endpoint retrieves all users for your company's account.
 
 ### HTTP Request
 
-`GET http://example.com/kittens`
+`GET http://simplysatisfied.net/api/v1/user`
 
 ### Query Parameters
 
 Parameter | Default | Description
 --------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
+`include` | null | Include related datasets, `company` is the only related data available for this endpoint.
+`page` | 1 | Which page of results to return.
 
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
 
-## Get a Specific Kitten
+## Get a single user
 
-```ruby
-require 'kittn'
+```php
+<?php
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
+$api = new Simply\Api('your-api-key-here');
 
-```python
-import 'kittn'
-
-api = Kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
+$users = $api->users->find(21)->get();
 ```
 
 ```shell
-curl "http://example.com/api/kittens/3"
-  -H "Authorization: meowmeowmeow"
+$ curl "http://simplysatisfied.net/api/v1/user/21"
+  -H "X-Simply-Auth: your-api-key-here"
 ```
 
-> The above command returns JSON structured like this:
+> Example response:
 
 ```json
 {
-  "id": 2,
-  "name": "Isis",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
+  "data":{
+    "id": 1,
+    "email": "tom@example.me",
+    "name": "Tom Haverford",
+    "confirmed": true,
+    "company_id": 1,
+    "created_at": "2014-10-10 15:51:51",
+    "updated_at":"2014-10-10 15:51:51",
+    "remember_token":""
+  }
 }
 ```
 
-This endpoint retrieves a specific kitten.
-
-<aside class="warning">If you're not using an administrator API key, note that some kittens will return 403 Forbidden if they are hidden for admins only.</aside>
+This endpoint retrieves a specific user.
 
 ### HTTP Request
 
-`GET http://example.com/kittens/<ID>`
+`GET http://simplysatisfied.net/api/v1/user/{id}`
 
 ### URL Parameters
 
 Parameter | Description
 --------- | -----------
-ID | The ID of the cat to retrieve
+`{id}` | The ID of the user to retrieve
 
+### Query Parameters
+
+Parameter | Default | Description
+--------- | ----------- | -----------
+`include` | null | Include related data, this endpoint only accepts `company` as an include.
+
+## Update a user
+
+```shell
+$ curl https://simplysatisfied.net/api/v1/user/{id} \
+   -H "X-Simply-Auth: your-api-key-here" \
+   -d name=Swan Ronson
+```
+
+```php
+<?php
+
+$api = new Simply\Api('your-api-key-here');
+
+$api->users->update(21, [
+  'name' => 'Swan Ronson',
+])->makeRequest();
+```
+
+Sometimes you may need to update a user, wether it be to update their name, email or preferences.
+
+### HTTP Request
+
+`PATCH http://simplysatisfied.net/api/v1/user/{id}`
+
+### URL Parameters
+
+Parameter | Description
+--------- | -----------
+`{id}` | The ID of the user to update.
+
+# Company
+
+## List all companies
+
+```php
+<?php
+
+$api = new Simply\Api('your-api-key-here');
+
+$users = $api->company->all()->get();
+```
+
+```shell
+$ curl "http://simplysatisfied.net/api/v1/company"
+  -H "X-Simply-Auth: your-api-key-here"
+```
+
+> Example response:
+
+```json
+{
+  "data":[
+    {
+      "id": 1,
+      "name": "Loam",
+      "url": "",
+      "commercial_sector":null,
+      "widget_key": "5pqZNWcD3r3sBAOrQg5ToMCrdwTvi7em",
+      "created_at": "2014-10-10 15:51:51",
+      "updated_at": "2014-10-10 15:52:24"
+    }
+  ],
+  "meta":{
+    "pagination":{
+      "total":1,
+      "count":1,
+      "per_page":30,
+      "current_page":1,
+      "total_pages":1,
+      "links":[]
+    }
+  }
+}
+```
+
+List all companies your current user is attached to.
+
+### HTTP Request:
+`GET http://simplystaisfied.net/api/v1/company`
+
+<aside class="notice">
+Currently Simply Satisfied only allows you to be associated with **one** company, and while this *may* change in the future, we have included both "list all" and "view one" methods in the API, to allow for future expansion and consistency with other endpoints.
+</aside>
+
+# Invites
+Invites are the backbone of Simply Satisfied - you cannot create a Response without a valid invite, and the invite stores all the customer data including email, name and an optional reference number.
+
+### Automatic emails
+```json
+{
+  "send_email":false
+}
+```
+
+Creating an invite through the API automatically send lovely looking email invitations to your customers to ask them to give you feedback, but what if you don't want to send that email?
+
+Invites **require** a name and an email address to verify that they're going to real people, but you can set `send_email = false` during creation to halt the sending of an email invitation to the customer.
+
+This is especially handy if you are building an application where you're collecting this information on the fly, then want to redirect the user to a feedback form (i.e. in e-commerce, or when using your SaaS app).
+
+## List all invites
+
+```shell
+$ curl http://simplysatisfied.net/api/v1/invite
+  -H "X-Simply-Auth: your-api-key-here"
+```
+
+```php
+<?php
+
+$api = new Simply\Api('your-api-key-here');
+$invites = $api->invites->all()->get();
+```
+
+>Example response:
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "survey_id": 1,
+      "user_id": 1,
+      "email": "fwolff@example.net",
+      "name": "Madeline Eichmann",
+      "message": "Perspiciatis nihil et est at maiores amet. Eum aut rerum aliquid non. Sunt et neque libero laboriosam fuga ex et ut.",
+      "reference": "test",
+      "viewed": false,
+      "responded": false,
+      "opened": false,
+      "send_email": false,
+      "response_hash": "va5B3ma2ZAWwZA47",
+      "bounced": false,
+      "send_reminders": 1,
+      "reminder_unsubscribe_key": "h3s4KsDcMVq3nhMm",
+      "created_at": "2014-08-03 02:09:00",
+      "updated_at": "2014-10-10 17:23:09",
+      "survey_revision_id": 1,
+      "link": "http://simply.local:8000/s/va5B3ma2ZAWwZA47"
+    },
+    {
+      "id": 2,
+      "survey_id": 1,
+      "user_id": 1,
+      "email": "tmckenzie@example.com",
+      "name": "Dina Deckow",
+      "message": "Quis et hic est nisi quod corrupti magni voluptatem. Ea nulla quo pariatur quis et magnam ea quos. Consequuntur dolorem excepturi est unde nam aut a.",
+      "reference": "test",
+      "viewed": false,
+      "responded": false,
+      "opened": false,
+      "send_email": false,
+      "response_hash": "zVidLqkXSfkfcncV",
+      "bounced": false,
+      "send_reminders": 1,
+      "reminder_unsubscribe_key": "f1KuVjhF6j5sPOXX",
+      "created_at": "2014-04-03 23:03:34",
+      "updated_at": "2014-10-10 17:23:09",
+      "survey_revision_id": 1,
+      "link": "http://simply.local:8000/s/zVidLqkXSfkfcncV"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "total": 101,
+      "count": 2,
+      "per_page": 2,
+      "current_page": 1,
+      "total_pages": 51,
+      "links": {
+        "next": "http://simply.local:8000/api/v1/invite?page=2"
+      }
+    }
+  }
+}
+```
+
+List all invites your have sent, ordered by most recent first, and paginated.
+
+### HTTP Request:
+
+`GET http://simplysatisfied.net/api/v1/invite`
+
+### Query Parameters
+
+Parameter | Default | Description
+--------- | ------- | -----------
+`page` | 1 | Which page of results to return.
+
+
+# Responses
